@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking en Tiempo Real</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        /* Colores para tiers */
+        .tier-lt4 { background-color: #E1F5FE; }
+        .tier-ht4 { background-color: #B3E5FC; }
+        .tier-lt3 { background-color: #E3F2FD; }
+        .tier-ht3 { background-color: #BBDEFB; }
+        .tier-lt2 { background-color: #FFEBEE; }
+        .tier-ht2 { background-color: #FFCDD2; }
+        .tier-lt1 { background-color: #E8F5E9; }
+        .tier-ht1 { background-color: #C8E6C9; }
+    </style>
+</head>
+<body>
+    <h1>🏆 Ranking Actualizado 🏆</h1>
+    <table id="datos">
+        <!-- Los datos se cargarán aquí -->
+    </table>
+
+    <script>
+        // URL ESPECIAL para tu Sheets (¡funcionará seguro!)
+        const sheetId = '17MGt__hyDYBsM8QIZS8D2pBCDEPWOCZ0LPFQhlBKcdI';
+        const gid = '1123447726';
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+        
+        async function cargarDatos() {
+            try {
+                const response = await fetch(url);
+                const csv = await response.text();
+                const filas = csv.split('\n');
+                
+                let html = `
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Jugador</th>
+                            <th>Tier</th>
+                            <th>ELO</th>
+                            <th>W</th>
+                            <th>L</th>
+                            <th>% Win</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                `;
+                
+                filas.slice(1).forEach((fila, i) => {
+                    // Manejo especial para CSV con comas dentro de valores
+                    const cols = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    
+                    if(cols.length >= 7) {
+                        const tier = cols[2] ? cols[2].toLowerCase().trim().replace(/"/g, '') : '';
+                        html += `
+                            <tr class="tier-${tier}">
+                                <td>${i+1}</td>
+                                <td>${cols[1].replace(/"/g, '')}</td>
+                                <td>${cols[2].replace(/"/g, '')}</td>
+                                <td>${cols[3].replace(/"/g, '')}</td>
+                                <td>${cols[4].replace(/"/g, '')}</td>
+                                <td>${cols[5].replace(/"/g, '')}</td>
+                                <td>${cols[6].replace(/"/g, '')}</td>
+                            </tr>
+                        `;
+                    }
+                });
+                
+                document.getElementById('datos').innerHTML = html + '</tbody>';
+            } catch (error) {
+                console.error("Error al cargar datos:", error);
+                document.getElementById('datos').innerHTML = `
+                    <tr>
+                        <td colspan="7" style="color: red; text-align: center;">
+                            Error al cargar datos. Verifica la consola para detalles.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Cargar inmediatamente y cada 2 minutos
+        cargarDatos();
+        setInterval(cargarDatos, 120000);
+    </script>
+</body>
+</html>
